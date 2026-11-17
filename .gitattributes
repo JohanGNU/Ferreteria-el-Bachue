@@ -1,0 +1,10 @@
+# Normaliza finales de línea en el repo
+* text=auto
+# Los scripts de shell corren dentro de Linux (contenedor de Postgres): siempre LF
+*.sh text eol=lf
+*.sql text eol=lf
+# Binarios
+*.png binary
+*.jpg binary
+*.pdf binary
+*.zip binary
