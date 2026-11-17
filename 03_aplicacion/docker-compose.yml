@@ -1,0 +1,72 @@
+# Arranque: docker compose up --build   (desde 03_aplicacion/, con el archivo .env creado)
+# Recrear la BD desde cero (BORRA los datos): docker compose down -v
+
+name: ferreteria
+
+services:
+  db:
+    image: postgres:17
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      APP_DB_USER: ${APP_DB_USER}
+      APP_DB_PASSWORD: ${APP_DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # Scripts de init: solo corren con el volumen vacío, en orden alfabético
+      - ../02_base_de_datos/script_creacion.sql:/docker-entrypoint-initdb.d/01_script_creacion.sql:ro
+      - ../02_base_de_datos/rutinas_triggers.sql:/docker-entrypoint-initdb.d/02_rutinas_triggers.sql:ro
+      - ../02_base_de_datos/consultas_reportes.sql:/docker-entrypoint-initdb.d/03_consultas_reportes.sql:ro
+      - ../02_base_de_datos/datos_prueba.sql:/docker-entrypoint-initdb.d/04_datos_prueba.sql:ro
+      - ../02_base_de_datos/init_usuario_app.sh:/docker-entrypoint-initdb.d/05_init_usuario_app.sh:ro
+    healthcheck:
+      # Por TCP: durante el init el servidor temporal solo escucha por socket,
+      # así la API no arranca antes de que terminen los scripts
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  api:
+    build: ./backend
+    # La API se conecta como app_ferreteria (DATABASE_URL), nunca como postgres
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXPIRE_MINUTES: ${JWT_EXPIRE_MINUTES}
+      WATCHFILES_FORCE_POLLING: "true"
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    # Dockerfile y proyecto Vite: los crea Michel en ./frontend
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules   # volumen anónimo: no pisar node_modules del contenedor
+    depends_on:
+      - api
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+    ports:
+      - "5050:80"
+    depends_on:
+      - db
+
+volumes:
+  pgdata:

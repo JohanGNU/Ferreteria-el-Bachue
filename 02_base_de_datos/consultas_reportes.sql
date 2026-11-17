@@ -1,0 +1,7 @@
+-- =====================================================================
+-- Ferretería El Bachué - vistas y consultas de reportes (init 03)
+-- Vistas (A8): vw_ventas_detalle, vw_ventas_categoria_mes,
+--              vw_top_productos, vw_stock_bajo
+-- Consultas avanzadas (A9): JOIN de 3+ tablas, subconsulta, GROUP BY + HAVING
+-- Responsable: Michel
+-- =====================================================================
