@@ -1,0 +1,102 @@
+=== Prueba de restauración del respaldo: 2026-11-17 12:42 ===
+$ createdb ferreteria_restaurada
+$ psql -d ferreteria_restaurada -v ON_ERROR_STOP=1 -f ferreteria_respaldo.sql
+NOTICE:  database "ferreteria_restaurada" does not exist, skipping
+ set_config 
+------------
+ 
+(1 row)
+
+ setval 
+--------
+     34
+(1 row)
+
+ setval 
+--------
+      8
+(1 row)
+
+ setval 
+--------
+     10
+(1 row)
+
+ setval 
+--------
+     68
+(1 row)
+
+ setval 
+--------
+     91
+(1 row)
+
+ setval 
+--------
+     22
+(1 row)
+
+ setval 
+--------
+      5
+(1 row)
+
+ setval 
+--------
+      2
+(1 row)
+
+ setval 
+--------
+      2
+(1 row)
+
+ setval 
+--------
+     31
+(1 row)
+
+Restauración terminada sin errores.
+
+--- Objetos restaurados ---
+      objeto      | count 
+------------------+-------
+ tablas           |    10
+ vistas           |     4
+ procedimientos   |     6
+ funciones (fn_*) |     9
+ triggers         |     6
+ índices idx_*    |     3
+(6 rows)
+
+--- Datos restaurados ---
+ productos | clientes | ventas | auditoria 
+-----------+----------+--------+-----------
+        22 |       10 |     31 |        34
+(1 row)
+
+--- La lógica funciona en la copia: venta vía procedimiento y trigger de stock ---
+ stock_antes 
+-------------
+          38
+(1 row)
+
+ p_venta_id 
+------------
+         32
+(1 row)
+
+ stock_despues | estado 
+---------------+--------
+            36 | OK
+(1 row)
+
+ puesto | producto_id | codigo |            producto            |  categoria   | unidades_vendidas | total_vendido 
+--------+-------------+--------+--------------------------------+--------------+-------------------+---------------
+      1 |          11 | EL-001 | Cable THHN calibre 12 (metro)  | Electricidad |               180 |     630000.00
+      2 |          20 | CO-001 | Cemento gris uso general 50 kg | Construcción |               136 |    4964000.00
+      3 |          21 | CO-002 | Arena de río (bulto 40 kg)     | Construcción |                95 |     902500.00
+(3 rows)
+
+(BD de prueba ferreteria_restaurada eliminada)
