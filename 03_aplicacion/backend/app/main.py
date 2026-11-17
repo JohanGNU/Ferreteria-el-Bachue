@@ -11,9 +11,10 @@ from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from psycopg import errors
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .db import pool
-from .routers import auth
+from .routers import auth, categorias, productos, ventas
 
 
 @asynccontextmanager
@@ -68,6 +69,21 @@ async def error_bd(request: Request, exc: psycopg.Error):
     return responder(500, "Error en la base de datos. Intente de nuevo.")
 
 
+# Errores HTTP genéricos de FastAPI/Starlette (vienen en inglés)
+MENSAJES_HTTP = {
+    "Not Found": "Recurso no encontrado",
+    "Method Not Allowed": "Método no permitido",
+    "There was an error parsing the body": "El cuerpo de la petición no es válido",
+}
+
+
+@app.exception_handler(StarletteHTTPException)
+async def error_http(request: Request, exc: StarletteHTTPException):
+    detalle = MENSAJES_HTTP.get(exc.detail, exc.detail) if isinstance(exc.detail, str) else exc.detail
+    return JSONResponse(status_code=exc.status_code, content={"detail": detalle},
+                        headers=getattr(exc, "headers", None))
+
+
 # Errores 422 de Pydantic traducidos al español
 MENSAJES_VALIDACION = {
     "missing": "es obligatorio",
@@ -100,6 +116,8 @@ async def error_validacion(request: Request, exc: RequestValidationError):
     partes = []
     for error in exc.errors():
         campo = ".".join(str(x) for x in error["loc"] if x not in ("body", "query", "path"))
+        if error["type"] == "json_invalid":
+            campo = ""  # el loc es la posición del error en el texto, no un campo
         plantilla = MENSAJES_VALIDACION.get(error["type"])
         if plantilla:
             try:
@@ -118,6 +136,9 @@ async def error_validacion(request: Request, exc: RequestValidationError):
 # Routers - sección Johan
 # =====================================================================
 app.include_router(auth.router)
+app.include_router(productos.router)
+app.include_router(categorias.router)
+app.include_router(ventas.router)
 
 
 # =====================================================================
