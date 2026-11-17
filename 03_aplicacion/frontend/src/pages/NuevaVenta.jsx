@@ -139,7 +139,7 @@ export default function NuevaVenta() {
 
         <div className="col-lg-7">
           <div className="tarjeta p-3 h-100 d-flex flex-column">
-            <h2 className="h6 fw-semibold">Productos de la venta</h2>
+            <h2 className="h6">Productos de la venta</h2>
             {errorVenta && (
               <div className="alert alert-danger py-2">
                 <i className="bi bi-x-octagon me-2" />
@@ -148,7 +148,7 @@ export default function NuevaVenta() {
             )}
             <div className="table-responsive flex-grow-1">
               <table className="table table-sm align-middle">
-                <thead className="table-light">
+                <thead>
                   <tr>
                     <th>Producto</th>
                     <th className="text-end">Precio</th>

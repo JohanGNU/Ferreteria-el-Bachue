@@ -1,12 +1,20 @@
-// Título de cada pantalla con un botón de acción opcional a la derecha.
-export default function Encabezado({ titulo, icono, children }) {
+// Título de cada pantalla (rótulo condensado con el icono en un cuadro amarillo),
+// un subtítulo opcional y los botones de acción a la derecha.
+export default function Encabezado({ titulo, icono, subtitulo, children }) {
   return (
-    <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-      <h1 className="h4 mb-0">
-        {icono && <i className={`bi bi-${icono} me-2 text-primary`} />}
-        {titulo}
-      </h1>
-      <div className="d-flex flex-wrap gap-2">{children}</div>
-    </div>
+    <header className="encabezado">
+      <div>
+        <h1 className="titulo-pagina">
+          {icono && (
+            <span className="icono" aria-hidden="true">
+              <i className={`bi bi-${icono}`} />
+            </span>
+          )}
+          {titulo}
+        </h1>
+        {subtitulo && <p className="subtitulo-pagina">{subtitulo}</p>}
+      </div>
+      {children && <div className="d-flex flex-wrap gap-2">{children}</div>}
+    </header>
   )
 }

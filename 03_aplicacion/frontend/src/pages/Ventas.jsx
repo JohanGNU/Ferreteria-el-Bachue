@@ -130,7 +130,7 @@ export default function Ventas() {
             </div>
             <div className="table-responsive">
               <table className="table table-sm align-middle">
-                <thead className="table-light">
+                <thead>
                   <tr>
                     <th>Producto</th>
                     <th className="text-end">Cant.</th>

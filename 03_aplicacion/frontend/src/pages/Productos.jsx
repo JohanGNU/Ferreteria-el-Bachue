@@ -164,13 +164,13 @@ export default function Productos() {
               value={form.precio_compra} onChange={cambiar('precio_compra')} />
           </Campo>
           <Campo etiqueta="Precio de venta (sin IVA)" className="col-md-6" error="Número mayor que 0"
-            ayuda="Debe ser mayor o igual al precio de compra (lo valida un trigger)">
+            ayuda="Debe ser mayor o igual al precio de compra">
             <input type="number" className="form-control" required min={0.01} step="0.01"
               value={form.precio_venta} onChange={cambiar('precio_venta')} />
           </Campo>
           {!editandoId && (
             <Campo etiqueta="Stock inicial" className="col-md-6" error="Entero mayor o igual a 0"
-              ayuda="Queda registrado como entrada en el kardex">
+              ayuda="Queda registrado como entrada en el historial de inventario">
               <input type="number" className="form-control" required min={0} step={1}
                 value={form.stock} onChange={cambiar('stock')} />
             </Campo>

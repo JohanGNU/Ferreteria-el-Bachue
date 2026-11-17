@@ -7,7 +7,8 @@ import TablaDatos from '../components/TablaDatos'
 import useListado from '../components/useListado'
 import { formatoFecha } from '../formato'
 
-const COLOR_OPERACION = { INSERT: 'success', UPDATE: 'primary', DELETE: 'danger' }
+// Insignia por operación: INSERT neutra, UPDATE amarilla (cambio), DELETE roja (borrado)
+const COLOR_OPERACION = { INSERT: 'neutra', UPDATE: 'amarilla', DELETE: 'roja' }
 
 // Para UPDATE: lista solo los campos que cambiaron
 function cambios(fila) {
@@ -33,7 +34,7 @@ export default function Auditoria() {
     { titulo: 'Tabla', campo: 'tabla' },
     {
       titulo: 'Operación',
-      render: (a) => <span className={`badge text-bg-${COLOR_OPERACION[a.operacion]}`}>{a.operacion}</span>,
+      render: (a) => <span className={`insignia insignia-${COLOR_OPERACION[a.operacion]}`}>{a.operacion}</span>,
     },
     { titulo: 'Registro', campo: 'registro_id', className: 'text-end' },
     {
@@ -97,7 +98,7 @@ export default function Auditoria() {
         </div>
         <TablaDatos columnas={columnas} filas={filas} cargando={cargando} vacio="No hay registros de auditoría" />
         <small className="text-body-secondary d-block mt-2">
-          Se muestran los últimos 200 registros. Los cambios de solo stock no se auditan: quedan en el kardex.
+          Se muestran los últimos 200 registros. Usa los filtros de fecha para ver cambios anteriores.
         </small>
       </div>
 

@@ -5,24 +5,26 @@ import { Link } from 'react-router-dom'
 import api, { mensajeError } from '../api'
 import { useAuth } from '../auth'
 import { useAlertas } from '../components/Alertas'
+import Encabezado from '../components/Encabezado'
 import { EstadoStock } from '../components/Insignias'
 import TablaDatos from '../components/TablaDatos'
 import { formatoMoneda, formatoNumero } from '../formato'
 
 function Indicador({ titulo, valor, detalle, icono }) {
   return (
-    <div className="col-6 col-lg-3">
-      <div className="tarjeta p-3 h-100">
-        <div className="d-flex justify-content-between text-body-secondary small">
-          <span>{titulo}</span>
-          <i className={`bi bi-${icono}`} />
-        </div>
-        <div className="kpi-valor">{valor}</div>
-        {detalle && <div className="small text-body-secondary">{detalle}</div>}
+    <div className="indicador">
+      <div className="indicador-titulo">
+        <span>{titulo}</span>
+        <i className={`bi bi-${icono}`} aria-hidden="true" />
       </div>
+      <div className="indicador-valor">{valor}</div>
+      {detalle && <div className="indicador-detalle">{detalle}</div>}
     </div>
   )
 }
+
+// Fecha de hoy en palabras, para el subtítulo del inicio (p. ej. "martes, 17 de noviembre de 2026")
+const hoy = () => new Intl.DateTimeFormat('es-CO', { dateStyle: 'full' }).format(new Date())
 
 export default function Inicio() {
   const { usuario, esAdmin } = useAuth()
@@ -43,22 +45,18 @@ export default function Inicio() {
 
   return (
     <>
-      <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
-        <div>
-          <h1 className="h4 mb-0">Hola, {usuario.nombre}</h1>
-          <small className="text-body-secondary">Ferretería El Bachué · inventario y ventas</small>
-        </div>
+      <Encabezado titulo={`Hola, ${usuario.nombre}`} subtitulo={hoy()}>
         <Link to="/ventas/nueva" className="btn btn-primary">
           <i className="bi bi-cart-plus me-1" />Nueva venta
         </Link>
-      </div>
+      </Encabezado>
 
       {esAdmin && resumen && (
-        <div className="row g-3 mb-4">
+        <div className="franja-indicadores">
           <Indicador titulo="Ventas de hoy" icono="cash-coin" valor={formatoMoneda(resumen.ventas_hoy)}
             detalle={`${resumen.numero_ventas_hoy} ventas`} />
           <Indicador titulo="Ventas del mes" icono="calendar3" valor={formatoMoneda(resumen.ventas_mes)}
-            detalle={`${resumen.numero_ventas_mes} ventas · con IVA`} />
+            detalle={`${resumen.numero_ventas_mes} ventas, con IVA`} />
           <Indicador titulo="Productos activos" icono="box-seam" valor={formatoNumero(resumen.productos_activos)} />
           <Indicador titulo="Con stock bajo" icono="exclamation-triangle" valor={formatoNumero(resumen.productos_stock_bajo)}
             detalle="BAJO o AGOTADO" />
@@ -66,12 +64,7 @@ export default function Inicio() {
       )}
 
       <section className="tarjeta p-3">
-        <div className="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
-          <h2 className="h6 fw-semibold mb-0">
-            <i className="bi bi-exclamation-triangle text-warning me-2" />Alerta de stock bajo
-          </h2>
-          <small className="text-body-secondary">Fuente: <code>vw_stock_bajo</code></small>
-        </div>
+        <h2 className="mb-3">Alerta de stock bajo</h2>
         {!cargando && stockBajo.length > 0 && (
           <div className="alert alert-warning py-2 small">
             Hay {stockBajo.length} producto(s) en el mínimo o agotados. Conviene pedir al proveedor.

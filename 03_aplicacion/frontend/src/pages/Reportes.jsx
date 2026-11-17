@@ -9,21 +9,18 @@ import { Bar } from 'react-chartjs-2'
 import api, { mensajeError } from '../api'
 import { useAlertas } from '../components/Alertas'
 import Encabezado from '../components/Encabezado'
-import { colorPorId, estiloBarra, opcionesBarras, PALETA, pesosCompacto } from '../components/graficas'
+import { COLOR_UNICO, colorPorId, estiloBarra, opcionesBarras, pesosCompacto } from '../components/graficas'
 import { Clasificacion } from '../components/Insignias'
 import TablaDatos from '../components/TablaDatos'
 import { formatoFecha, formatoMes, formatoMoneda, formatoNumero } from '../formato'
 
 const dinero = (v, completo) => (completo ? formatoMoneda(v) : pesosCompacto(v))
 
-function Tarjeta({ titulo, fuente, controles, children }) {
+function Tarjeta({ titulo, controles, children }) {
   return (
     <section className="tarjeta p-3 mb-4">
       <div className="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
-        <div>
-          <h2 className="h6 fw-semibold mb-0">{titulo}</h2>
-          <small className="text-body-secondary">Fuente: <code>{fuente}</code></small>
-        </div>
+        <h2 className="h6 mb-0">{titulo}</h2>
         {controles}
       </div>
       {children}
@@ -69,7 +66,6 @@ function VentasCategoriaMes({ idsCategorias }) {
   return (
     <Tarjeta
       titulo="Ventas por categoría y mes (sin IVA)"
-      fuente="vw_ventas_categoria_mes"
       controles={
         <select className="form-select form-select-sm" style={{ width: 'auto' }} value={meses}
           onChange={(e) => setMeses(Number(e.target.value))} aria-label="Meses">
@@ -97,7 +93,6 @@ function TopProductos() {
   return (
     <Tarjeta
       titulo="Top de productos más vendidos (unidades)"
-      fuente="vw_top_productos"
       controles={
         <select className="form-select form-select-sm" style={{ width: 'auto' }} value={limite}
           onChange={(e) => setLimite(Number(e.target.value))} aria-label="Cantidad">
@@ -111,7 +106,7 @@ function TopProductos() {
         <Bar
           data={{
             labels: datos.map((d) => `${d.puesto}. ${d.producto}`),
-            datasets: [{ label: 'Unidades', data: datos.map((d) => d.unidades_vendidas), ...estiloBarra(PALETA[0]) }],
+            datasets: [{ label: 'Unidades', data: datos.map((d) => d.unidades_vendidas), ...estiloBarra(COLOR_UNICO) }],
           }}
           options={opcionesBarras({ horizontal: true, formatoValor: (v, completo) => (completo ? `${formatoNumero(v)} unidades` : formatoNumero(v)) })}
         />
@@ -125,7 +120,7 @@ function ClientesSobrePromedio() {
   const { datos, cargando } = useReporte('/reportes/clientes-sobre-promedio', {})
   const promedio = datos[0]?.promedio_general
   return (
-    <Tarjeta titulo="Clientes con compras sobre el promedio (con IVA)" fuente="fn_reporte_clientes_sobre_promedio()">
+    <Tarjeta titulo="Clientes con compras sobre el promedio (con IVA)">
       {promedio !== undefined && (
         <p className="small mb-2">Promedio de compras por cliente: <strong>{formatoMoneda(promedio)}</strong></p>
       )}
@@ -155,7 +150,6 @@ function CategoriasSobreMonto({ idsCategorias }) {
   return (
     <Tarjeta
       titulo="Categorías con ventas sobre un monto (sin IVA)"
-      fuente="fn_reporte_categorias_sobre_monto(monto) · HAVING"
       controles={
         <form className="input-group input-group-sm" style={{ width: 260 }}
           onSubmit={(e) => { e.preventDefault(); setMontoAplicado(monto) }}>
@@ -215,7 +209,7 @@ function DetalleVentas({ categorias }) {
   const total = datos.reduce((s, d) => s + Number(d.subtotal), 0)
 
   return (
-    <Tarjeta titulo="Detalle de ventas (sin IVA)" fuente="vw_ventas_detalle · JOIN de 6 tablas">
+    <Tarjeta titulo="Detalle de ventas (sin IVA)">
       <div className="row g-2 align-items-end mb-3">
         <div className="col-6 col-md-3">
           <label className="form-label small mb-1">Desde</label>

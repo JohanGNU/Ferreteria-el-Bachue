@@ -30,7 +30,7 @@ export default function TablaDatos({ columnas, filas, cargando, vacio = 'No hay 
   return (
     <div className="table-responsive">
       <table className="table table-hover align-middle mb-0">
-        <thead className="table-light">
+        <thead>
           <tr>
             {columnas.map((c) => (
               <th key={c.titulo} className={c.className}>{c.titulo}</th>

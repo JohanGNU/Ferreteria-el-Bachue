@@ -5,11 +5,13 @@
 import { BarElement, CategoryScale, Chart, Legend, LinearScale, Tooltip } from 'chart.js'
 
 Chart.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend)
-Chart.defaults.font.family = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif'
-Chart.defaults.color = '#52514e'
+Chart.defaults.font.family = '"Archivo Variable", system-ui, -apple-system, "Segoe UI", sans-serif'
+Chart.defaults.color = '#3d3d3d'
 
 export const PALETA = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100', '#e87ba4', '#008300', '#6250d6', '#e34948']
 export const COLOR_OTROS = '#8a8a86'
+// Gráficas de una sola serie (top de productos): negro de la marca, sin competir con la paleta categórica
+export const COLOR_UNICO = '#000000'
 export const SUPERFICIE = '#ffffff'
 
 // Ranura de color por id de categoría (ordenadas por id). De la 9.ª en adelante: gris "otros".
@@ -26,11 +28,11 @@ export function opcionesBarras({ horizontal = false, apilado = false, leyenda = 
   const ejeValor = {
     beginAtZero: true,
     stacked: apilado,
-    grid: { color: '#ecebe8' },
+    grid: { color: '#e3e3e3' },
     border: { display: false },
     ticks: { callback: (v) => (formatoValor ? formatoValor(v) : v) },
   }
-  const ejeCategoria = { stacked: apilado, grid: { display: false }, border: { color: '#d6d4cf' } }
+  const ejeCategoria = { stacked: apilado, grid: { display: false }, border: { color: '#000000' } }
   return {
     responsive: true,
     maintainAspectRatio: false,

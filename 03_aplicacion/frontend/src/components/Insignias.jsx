@@ -1,18 +1,17 @@
-// Insignias de estado reutilizadas en varias tablas.
-const COLORES_STOCK = { OK: 'success', BAJO: 'warning', AGOTADO: 'danger' }
-const COLORES_CLASE = { Premium: 'primary', Frecuente: 'info', Básico: 'secondary' }
+// Insignias de estado reutilizadas en varias tablas. El color sigue la paleta de la marca:
+// amarillo = atención, negro = lo más fuerte, rojo solo para lo anulado.
+const ESTILO_STOCK = { OK: 'neutra', BAJO: 'amarilla', AGOTADO: 'negra' }
+const ESTILO_CLASE = { Premium: 'negra', Frecuente: 'amarilla', Básico: 'neutra' }
 
-export const EstadoStock = ({ estado }) => (
-  <span className={`badge text-bg-${COLORES_STOCK[estado] || 'secondary'}`}>{estado}</span>
-)
+const Insignia = ({ estilo, children }) => <span className={`insignia insignia-${estilo}`}>{children}</span>
 
-export const Clasificacion = ({ valor }) => (
-  <span className={`badge text-bg-${COLORES_CLASE[valor] || 'secondary'}`}>{valor}</span>
-)
+export const EstadoStock = ({ estado }) => <Insignia estilo={ESTILO_STOCK[estado] || 'apagada'}>{estado}</Insignia>
+
+export const Clasificacion = ({ valor }) => <Insignia estilo={ESTILO_CLASE[valor] || 'apagada'}>{valor}</Insignia>
 
 export const Activo = ({ activo }) =>
-  activo ? <span className="badge text-bg-success">Activo</span> : <span className="badge text-bg-secondary">Inactivo</span>
+  activo ? <Insignia estilo="neutra">Activo</Insignia> : <Insignia estilo="apagada">Inactivo</Insignia>
 
 export const EstadoVenta = ({ estado }) => (
-  <span className={`badge text-bg-${estado === 'PAGADA' ? 'success' : 'danger'}`}>{estado}</span>
+  <Insignia estilo={estado === 'PAGADA' ? 'neutra' : 'roja'}>{estado}</Insignia>
 )

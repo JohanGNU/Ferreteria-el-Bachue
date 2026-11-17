@@ -33,7 +33,7 @@ export function AlertasProvider({ children }) {
       {children}
       <div className="alertas-flotantes">
         {lista.map((a) => (
-          <div key={a.id} className={`alert alert-${a.tipo} alert-dismissible shadow-sm mb-2`} role="alert">
+          <div key={a.id} className={`alert alert-${a.tipo} alert-dismissible mb-2`} role="alert">
             <i className={`bi ${a.tipo === 'success' ? 'bi-check-circle' : 'bi-exclamation-triangle'} me-2`} />
             {a.texto}
             <button type="button" className="btn-close" aria-label="Cerrar" onClick={() => cerrar(a.id)} />
