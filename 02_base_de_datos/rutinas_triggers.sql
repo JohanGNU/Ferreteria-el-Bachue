@@ -340,3 +340,169 @@ $$;
 -- y en el login lo deja en ''. Leerlo con:
 --   NULLIF(current_setting('app.usuario_id', true), '')::integer
 -- =====================================================================
+
+-- ---------------------------------------------------------------------
+-- fn_clasificar_cliente: CASE sobre el total comprado (ventas PAGADAS, con IVA).
+-- Uso en la app: columna "Clasificación" del listado de clientes.
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION fn_clasificar_cliente(p_cliente_id integer)
+RETURNS varchar
+LANGUAGE plpgsql
+STABLE
+AS $$
+DECLARE
+    v_total numeric(14,2);
+BEGIN
+    SELECT COALESCE(SUM(fn_total_venta(v.id)), 0)
+      INTO v_total
+      FROM ventas v
+     WHERE v.cliente_id = p_cliente_id
+       AND v.estado = 'PAGADA';
+
+    RETURN CASE
+        WHEN v_total >= 1000000 THEN 'Premium'
+        WHEN v_total >= 300000  THEN 'Frecuente'
+        ELSE 'Básico'
+    END;
+END;
+$$;
+
+-- ---------------------------------------------------------------------
+-- sp_eliminar_cliente: IF el cliente tiene ventas, se desactiva (no se puede
+-- borrar sin perder el historial); ELSE se elimina.
+-- p_resultado (OUT) le dice a la app qué pasó: 'DESACTIVADO' o 'ELIMINADO'.
+-- Uso en la app: botón "Eliminar" de clientes (DELETE /api/clientes/{id}).
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE PROCEDURE sp_eliminar_cliente(
+    IN  p_cliente_id  integer,
+    OUT p_resultado   varchar
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM clientes WHERE id = p_cliente_id) THEN
+        RAISE EXCEPTION 'El cliente % no existe', p_cliente_id;
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM ventas WHERE cliente_id = p_cliente_id) THEN
+        UPDATE clientes SET activo = false WHERE id = p_cliente_id;
+        p_resultado := 'DESACTIVADO';
+    ELSE
+        DELETE FROM clientes WHERE id = p_cliente_id;
+        p_resultado := 'ELIMINADO';
+    END IF;
+END;
+$$;
+
+-- ---------------------------------------------------------------------
+-- sp_registrar_entrada: entrada de mercancía. Suma el stock y deja el
+-- movimiento ENTRADA en el kardex.
+-- Uso en la app: "Entrada de mercancía" en la pantalla de proveedores.
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE PROCEDURE sp_registrar_entrada(
+    IN p_producto_id  integer,
+    IN p_cantidad     integer,
+    IN p_usuario_id   integer
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF p_cantidad IS NULL OR p_cantidad <= 0 THEN
+        RAISE EXCEPTION 'La cantidad de la entrada debe ser mayor que cero';
+    END IF;
+
+    UPDATE productos
+       SET stock = stock + p_cantidad
+     WHERE id = p_producto_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'El producto % no existe', p_producto_id;
+    END IF;
+
+    INSERT INTO movimientos_inventario (producto_id, tipo, cantidad, usuario_id)
+    VALUES (p_producto_id, 'ENTRADA', p_cantidad, p_usuario_id);
+END;
+$$;
+
+-- ---------------------------------------------------------------------
+-- trg_productos_validar_precio (BEFORE INSERT OR UPDATE en productos)
+-- Regla de negocio: no se vende por debajo del costo.
+-- Solo se dispara si cambian los precios (no en cada cambio de stock).
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION fn_trg_productos_validar_precio()
+RETURNS trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+    IF NEW.precio_venta < NEW.precio_compra THEN
+        RAISE EXCEPTION 'El precio de venta (%) no puede ser menor que el precio de compra (%)',
+                        NEW.precio_venta, NEW.precio_compra;
+    END IF;
+    RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_productos_validar_precio
+    BEFORE INSERT OR UPDATE OF precio_compra, precio_venta ON productos
+    FOR EACH ROW
+    EXECUTE FUNCTION fn_trg_productos_validar_precio();
+
+-- ---------------------------------------------------------------------
+-- trg_auditoria (AFTER INSERT/UPDATE/DELETE en productos, clientes, usuarios)
+-- Función genérica: CASE sobre TG_OP y to_jsonb(OLD/NEW).
+-- SECURITY DEFINER: corre con los permisos del dueño (postgres), así puede
+-- escribir en auditoria aunque app_ferreteria no tenga INSERT en esa tabla.
+-- El usuario de la app llega por set_config('app.usuario_id') desde la API.
+-- - Nunca guarda password_hash.
+-- - Omite los UPDATE que solo cambian el stock: ese historial ya está en el
+--   kardex (movimientos_inventario) y llenaría la auditoría de ruido.
+-- ---------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION fn_trg_auditoria()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+    v_usuario  integer := NULLIF(current_setting('app.usuario_id', true), '')::integer;
+    v_antes    jsonb;
+    v_despues  jsonb;
+BEGIN
+    IF TG_OP IN ('UPDATE', 'DELETE') THEN
+        v_antes := to_jsonb(OLD) - 'password_hash';
+    END IF;
+    IF TG_OP IN ('INSERT', 'UPDATE') THEN
+        v_despues := to_jsonb(NEW) - 'password_hash';
+    END IF;
+
+    IF TG_OP = 'UPDATE' AND (v_antes - 'stock') = (v_despues - 'stock') THEN
+        RETURN NULL;
+    END IF;
+
+    CASE TG_OP
+        WHEN 'INSERT' THEN
+            INSERT INTO auditoria (tabla, operacion, registro_id, usuario_id, datos_despues)
+            VALUES (TG_TABLE_NAME, TG_OP, NEW.id, v_usuario, v_despues);
+        WHEN 'UPDATE' THEN
+            INSERT INTO auditoria (tabla, operacion, registro_id, usuario_id, datos_antes, datos_despues)
+            VALUES (TG_TABLE_NAME, TG_OP, NEW.id, v_usuario, v_antes, v_despues);
+        WHEN 'DELETE' THEN
+            INSERT INTO auditoria (tabla, operacion, registro_id, usuario_id, datos_antes)
+            VALUES (TG_TABLE_NAME, TG_OP, OLD.id, v_usuario, v_antes);
+    END CASE;
+
+    RETURN NULL;  -- trigger AFTER: el valor de retorno se ignora
+END;
+$$;
+
+CREATE TRIGGER trg_auditoria
+    AFTER INSERT OR UPDATE OR DELETE ON productos
+    FOR EACH ROW EXECUTE FUNCTION fn_trg_auditoria();
+
+CREATE TRIGGER trg_auditoria
+    AFTER INSERT OR UPDATE OR DELETE ON clientes
+    FOR EACH ROW EXECUTE FUNCTION fn_trg_auditoria();
+
+CREATE TRIGGER trg_auditoria
+    AFTER INSERT OR UPDATE OR DELETE ON usuarios
+    FOR EACH ROW EXECUTE FUNCTION fn_trg_auditoria();
