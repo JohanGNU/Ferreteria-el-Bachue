@@ -7,8 +7,9 @@ admin: todo. vendedor: solo lectura.
 from decimal import Decimal
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import Field
 
+from ..esquemas import Entrada
 from ..auth import get_conn, require_role
 from ..db import patron_busqueda
 
@@ -26,7 +27,7 @@ SQL_PRODUCTOS = """
 """
 
 
-class ProductoBase(BaseModel):
+class ProductoBase(Entrada):
     codigo: str = Field(min_length=1, max_length=20, pattern=r"^[A-Za-z0-9-]+$")
     nombre: str = Field(min_length=2, max_length=120)
     categoria_id: int = Field(gt=0)
@@ -55,6 +56,7 @@ def obtener_producto(conn, producto_id: int) -> dict:
 def listar_productos(
     q: str | None = None,
     solo_activos: bool = False,
+    proveedor_id: int | None = None,
     conn=Depends(get_conn),
     usuario: dict = Depends(require_role("admin", "vendedor")),
 ):
@@ -64,9 +66,10 @@ def listar_productos(
         + """
         WHERE (%(patron)s::text IS NULL OR p.nombre ILIKE %(patron)s OR p.codigo ILIKE %(patron)s)
           AND (NOT %(solo_activos)s OR p.activo)
+          AND (%(proveedor_id)s::integer IS NULL OR p.proveedor_id = %(proveedor_id)s)
         ORDER BY p.nombre
         """,
-        {"patron": patron_busqueda(q), "solo_activos": solo_activos},
+        {"patron": patron_busqueda(q), "solo_activos": solo_activos, "proveedor_id": proveedor_id},
     ).fetchall()
 
 
@@ -110,6 +113,26 @@ def actualizar_producto(
             producto_id, datos.codigo, datos.nombre, datos.categoria_id, datos.proveedor_id,
             datos.precio_compra, datos.precio_venta, datos.stock_minimo, datos.activo,
         ),
+    )
+    return obtener_producto(conn, producto_id)
+
+
+class EntradaMercancia(Entrada):
+    cantidad: int = Field(gt=0, le=100000)
+
+
+@router.post("/{producto_id}/entradas")
+def registrar_entrada(
+    producto_id: int,
+    datos: EntradaMercancia,
+    conn=Depends(get_conn),
+    usuario: dict = Depends(require_role("admin")),
+):
+    """Entrada de mercancía vía sp_registrar_entrada (suma stock + kardex ENTRADA).
+    Se usa desde la pantalla de proveedores."""
+    conn.execute(
+        "CALL sp_registrar_entrada(%s, %s, %s)",
+        (producto_id, datos.cantidad, usuario["id"]),
     )
     return obtener_producto(conn, producto_id)
 

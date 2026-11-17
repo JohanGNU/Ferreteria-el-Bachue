@@ -7,20 +7,21 @@ from datetime import date
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from psycopg.types.json import Jsonb
-from pydantic import BaseModel, Field
+from pydantic import Field
 
+from ..esquemas import Entrada
 from ..auth import get_conn, require_role
 from ..db import patron_busqueda
 
 router = APIRouter(prefix="/api/ventas", tags=["ventas"])
 
 
-class ItemVenta(BaseModel):
+class ItemVenta(Entrada):
     producto_id: int = Field(gt=0)
     cantidad: int = Field(gt=0)
 
 
-class VentaEntrada(BaseModel):
+class VentaEntrada(Entrada):
     cliente_id: int = Field(gt=0)
     items: list[ItemVenta] = Field(min_length=1)
 

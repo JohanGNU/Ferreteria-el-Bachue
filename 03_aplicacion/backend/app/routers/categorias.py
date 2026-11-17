@@ -3,8 +3,9 @@
 admin: todo. vendedor: solo lectura (las usa como filtro de productos).
 """
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import Field
 
+from ..esquemas import Entrada
 from ..auth import get_conn, require_role
 from ..db import patron_busqueda
 
@@ -17,7 +18,7 @@ SQL_CATEGORIAS = """
 """
 
 
-class CategoriaEntrada(BaseModel):
+class CategoriaEntrada(Entrada):
     nombre: str = Field(min_length=2, max_length=60)
     descripcion: str | None = Field(default=None, max_length=500)
 

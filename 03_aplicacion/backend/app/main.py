@@ -14,7 +14,9 @@ from psycopg import errors
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from .db import pool
-from .routers import auth, categorias, productos, ventas
+from .routers import (
+    auditoria, auth, categorias, clientes, productos, proveedores, reportes, usuarios, ventas,
+)
 
 
 @asynccontextmanager
@@ -108,6 +110,8 @@ MENSAJES_VALIDACION = {
     "date_parsing": "debe ser una fecha válida (AAAA-MM-DD)",
     "json_invalid": "el cuerpo de la petición no es un JSON válido",
     "model_attributes_type": "debe ser un objeto",
+    "literal_error": "debe ser uno de: {expected}",
+    "enum": "debe ser uno de: {expected}",
 }
 
 
@@ -121,7 +125,7 @@ async def error_validacion(request: Request, exc: RequestValidationError):
         plantilla = MENSAJES_VALIDACION.get(error["type"])
         if plantilla:
             try:
-                mensaje = plantilla.format(**error.get("ctx", {}))
+                mensaje = plantilla.format(**error.get("ctx", {})).replace("' or '", "' o '")
             except (KeyError, IndexError):
                 mensaje = "tiene un valor inválido"
         elif error["type"] == "value_error" and "email" in error.get("msg", "").lower():
@@ -144,3 +148,8 @@ app.include_router(ventas.router)
 # =====================================================================
 # Routers - sección Michel
 # =====================================================================
+app.include_router(proveedores.router)
+app.include_router(clientes.router)
+app.include_router(usuarios.router)
+app.include_router(reportes.router)
+app.include_router(auditoria.router)
