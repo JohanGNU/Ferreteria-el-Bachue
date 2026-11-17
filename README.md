@@ -7,7 +7,9 @@ Proyecto final de **Bases de Datos II**. Ruta A (relacional, PostgreSQL). La ló
 **Integrantes:** Johan González y Michel Yepez.
 
 - Repositorio: https://github.com/JohanGNU/Ferreteria-el-Bachue
-- Despliegue: _pendiente_
+- Despliegue: https://ferreteria-el-bachue-1.onrender.com
+  - Frontend (sitio estático) y API (Docker) en Render; base de datos PostgreSQL en Neon. La API se conecta como `app_ferreteria`.
+  - En el plan gratuito, la API se apaga tras 15 minutos sin uso: la primera carga puede tardar cerca de un minuto.
 
 ## Tecnologías
 
