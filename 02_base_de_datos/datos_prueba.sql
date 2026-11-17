@@ -102,3 +102,91 @@ INSERT INTO clientes (documento, nombre, telefono, email) VALUES
     ('1058901234',   'Óscar Iván Torres Cely',                        '3160123456', NULL),
     ('901234567-8',  'Constructora Los Cerezos S.A.S.',               '6087712345', 'compras@loscerezos.com.co'),
     ('901345678-9',  'Mantenimientos Industriales del Sugamuxi S.A.S.','6087723456', 'almacen@mantsugamuxi.com');
+
+-- ---------------------------------------------------------------------
+-- Ventas de prueba (31, repartidas en ~3 meses) vía CALL sp_registrar_venta,
+-- así los triggers descuentan stock y llenan el kardex igual que en la app.
+-- Cada venta: cliente (documento), vendedor (email), días atrás e ítems
+-- {código: cantidad}. La venta marcada "anular" se anula con sp_anular_venta.
+-- Después de cada CALL se ajusta la fecha para simular el histórico.
+-- ---------------------------------------------------------------------
+DO $$
+DECLARE
+    v_ventas jsonb := '[
+      {"cliente": "901234567-8",  "vendedor": "admin",    "dias": 85, "items": {"CO-001": 40, "CO-002": 30, "TF-003": 10}},
+      {"cliente": "222222222222", "vendedor": "vendedor", "dias": 83, "items": {"HM-002": 2, "PL-003": 3}},
+      {"cliente": "1052345678",   "vendedor": "vendedor", "dias": 80, "items": {"HM-001": 1, "HM-004": 1, "TF-001": 2}},
+      {"cliente": "901345678-9",  "vendedor": "admin",    "dias": 78, "items": {"HE-001": 2, "HM-003": 3}},
+      {"cliente": "222222222222", "vendedor": "vendedor", "dias": 75, "items": {"EL-003": 6, "EL-002": 2}},
+      {"cliente": "1053456789",   "vendedor": "vendedor", "dias": 72, "items": {"PI-001": 3, "PI-002": 2}},
+      {"cliente": "1055678901",   "vendedor": "vendedor", "dias": 70, "items": {"PL-001": 6, "PL-003": 4}},
+      {"cliente": "901234567-8",  "vendedor": "vendedor", "dias": 67, "items": {"CO-001": 30, "TF-001": 10}},
+      {"cliente": "222222222222", "vendedor": "vendedor", "dias": 64, "items": {"TF-002": 2, "TF-003": 3}},
+      {"cliente": "1054567890",   "vendedor": "vendedor", "dias": 62, "items": {"EL-001": 40, "EL-002": 4}},
+      {"cliente": "1052345678",   "vendedor": "vendedor", "dias": 59, "items": {"HE-001": 1, "TF-002": 2}},
+      {"cliente": "1056789012",   "vendedor": "vendedor", "dias": 56, "items": {"JA-001": 1, "PL-003": 2}},
+      {"cliente": "901345678-9",  "vendedor": "admin",    "dias": 54, "items": {"HE-003": 1, "HM-002": 6}},
+      {"cliente": "222222222222", "vendedor": "vendedor", "dias": 51, "items": {"EL-003": 4, "PL-003": 2}},
+      {"cliente": "1057890123",   "vendedor": "vendedor", "dias": 48, "items": {"PI-001": 2, "PI-002": 3, "HM-004": 1}},
+      {"cliente": "1055678901",   "vendedor": "vendedor", "dias": 46, "items": {"PI-001": 4, "PI-002": 4}},
+      {"cliente": "901234567-8",  "vendedor": "admin",    "dias": 43, "items": {"CO-001": 25, "CO-002": 40, "EL-001": 60}},
+      {"cliente": "222222222222", "vendedor": "vendedor", "dias": 40, "items": {"HM-001": 1, "TF-003": 2}, "anular": true},
+      {"cliente": "1058901234",   "vendedor": "vendedor", "dias": 37, "items": {"TF-001": 3, "TF-002": 1}},
+      {"cliente": "1054567890",   "vendedor": "vendedor", "dias": 35, "items": {"EL-001": 30, "EL-003": 5}},
+      {"cliente": "901345678-9",  "vendedor": "vendedor", "dias": 32, "items": {"HE-001": 1, "HM-003": 2, "EL-002": 6}},
+      {"cliente": "222222222222", "vendedor": "vendedor", "dias": 29, "items": {"PL-001": 2, "PL-003": 1}},
+      {"cliente": "1053456789",   "vendedor": "vendedor", "dias": 26, "items": {"JA-001": 1, "HM-001": 1}},
+      {"cliente": "1052345678",   "vendedor": "vendedor", "dias": 23, "items": {"PI-001": 2, "CO-001": 4}},
+      {"cliente": "901234567-8",  "vendedor": "vendedor", "dias": 20, "items": {"CO-001": 35, "CO-002": 20, "TF-001": 15}},
+      {"cliente": "222222222222", "vendedor": "vendedor", "dias": 16, "items": {"EL-003": 3, "EL-002": 1}},
+      {"cliente": "1056789012",   "vendedor": "vendedor", "dias": 13, "items": {"HM-003": 1, "HM-002": 2}},
+      {"cliente": "901345678-9",  "vendedor": "admin",    "dias": 9,  "items": {"HE-003": 1, "EL-001": 50}},
+      {"cliente": "1057890123",   "vendedor": "vendedor", "dias": 6,  "items": {"PL-001": 3, "PL-003": 2}},
+      {"cliente": "222222222222", "vendedor": "vendedor", "dias": 3,  "items": {"TF-002": 1, "HM-004": 1}},
+      {"cliente": "1055678901",   "vendedor": "vendedor", "dias": 1,  "items": {"CO-002": 5, "CO-001": 2}}
+    ]';
+    v_n         integer := jsonb_array_length(v_ventas);
+    v_i         integer := 0;
+    v_venta     jsonb;
+    v_cliente   integer;
+    v_usuario   integer;
+    v_admin     integer;
+    v_items     jsonb;
+    v_venta_id  integer;
+    v_fecha     timestamptz;
+BEGIN
+    SELECT id INTO v_admin FROM usuarios WHERE email = 'admin@ferreteria.com';
+
+    WHILE v_i < v_n LOOP
+        v_venta := v_ventas -> v_i;
+
+        SELECT id INTO v_cliente FROM clientes WHERE documento = v_venta ->> 'cliente';
+        SELECT id INTO v_usuario FROM usuarios
+         WHERE email = (v_venta ->> 'vendedor') || '@ferreteria.com';
+
+        -- {código: cantidad} -> [{"producto_id": id, "cantidad": n}]
+        SELECT jsonb_agg(jsonb_build_object('producto_id', p.id, 'cantidad', i.value::integer))
+          INTO v_items
+          FROM jsonb_each_text(v_venta -> 'items') AS i
+          JOIN productos p ON p.codigo = i.key;
+
+        CALL sp_registrar_venta(v_cliente, v_usuario, v_items, v_venta_id);
+
+        -- Fecha simulada: hace N días, en horario de atención (8 a. m. - 5 p. m.)
+        v_fecha := date_trunc('day', now())
+                   - (v_venta ->> 'dias')::integer * interval '1 day'
+                   + interval '8 hours' + (v_i % 9) * interval '1 hour' + interval '17 minutes';
+        UPDATE ventas SET fecha = v_fecha WHERE id = v_venta_id;
+        UPDATE movimientos_inventario SET fecha = v_fecha WHERE venta_id = v_venta_id;
+
+        IF (v_venta ->> 'anular')::boolean IS TRUE THEN
+            CALL sp_anular_venta(v_venta_id, v_admin);
+            UPDATE movimientos_inventario
+               SET fecha = v_fecha + interval '2 hours'
+             WHERE venta_id = v_venta_id AND tipo = 'DEVOLUCION';
+        END IF;
+
+        v_i := v_i + 1;
+    END LOOP;
+END;
+$$;

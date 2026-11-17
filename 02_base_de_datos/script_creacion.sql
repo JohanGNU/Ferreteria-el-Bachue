@@ -7,6 +7,13 @@
 -- Extensión para búsqueda por similitud de texto (índice GIN trigram)
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
+-- Hora de Colombia para fechas y reportes por día/mes (aplica a sesiones nuevas)
+DO $$
+BEGIN
+    EXECUTE format('ALTER DATABASE %I SET timezone TO %L', current_database(), 'America/Bogota');
+END;
+$$;
+
 -- ---------------------------------------------------------------------
 -- 1. roles: perfiles de acceso a la aplicación (admin, vendedor)
 -- ---------------------------------------------------------------------

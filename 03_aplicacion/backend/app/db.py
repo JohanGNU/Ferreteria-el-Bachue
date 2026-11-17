@@ -19,6 +19,18 @@ pool = ConnectionPool(
 )
 
 
+def patron_busqueda(q: str | None) -> str | None:
+    """Convierte el texto del buscador en un patrón para ILIKE ('%texto%').
+
+    Escapa %, _ y \\ para que el usuario no pueda meter comodines. El patrón se
+    pasa como parámetro (%s), nunca concatenado en el SQL.
+    """
+    if q is None or not q.strip():
+        return None
+    texto = q.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return f"%{texto}%"
+
+
 def usar_conexion(usuario_id: int | None):
     """Toma una conexión del pool y deja el id del usuario en la sesión.
 
