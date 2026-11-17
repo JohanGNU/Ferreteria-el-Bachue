@@ -39,6 +39,16 @@
   box-shadow: 0 0 0 0.2rem rgba(180, 83, 9, 0.2);
 }
 
+.form-check-input:checked {
+  background-color: var(--marca);
+  border-color: var(--marca);
+}
+
+.form-check-input:focus {
+  border-color: #d97706;
+  box-shadow: 0 0 0 0.2rem rgba(180, 83, 9, 0.2);
+}
+
 .barra-principal {
   background: #292524;
 }
