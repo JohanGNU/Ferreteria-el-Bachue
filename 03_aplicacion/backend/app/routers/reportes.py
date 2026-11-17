@@ -54,7 +54,7 @@ def ventas_categoria_mes(
 ):
     return conn.execute(
         """
-        SELECT mes, categoria, unidades, total
+        SELECT mes, categoria_id, categoria, unidades, total
         FROM vw_ventas_categoria_mes
         WHERE mes >= date_trunc('month', current_date) - make_interval(months => %s - 1)
         ORDER BY mes, categoria

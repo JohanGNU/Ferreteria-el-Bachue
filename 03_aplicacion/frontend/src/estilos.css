@@ -1,0 +1,117 @@
+/* Colores de la marca sobre Bootstrap 5 */
+:root {
+  --marca: #b45309;
+  --marca-oscuro: #78350f;
+  --bs-primary: #b45309;
+  --bs-primary-rgb: 180, 83, 9;
+  --bs-link-color: #b45309;
+  --bs-link-color-rgb: 180, 83, 9;
+  --bs-link-hover-color: #78350f;
+  --bs-body-bg: #f6f4f1;
+}
+
+.btn-primary {
+  --bs-btn-bg: var(--marca);
+  --bs-btn-border-color: var(--marca);
+  --bs-btn-hover-bg: var(--marca-oscuro);
+  --bs-btn-hover-border-color: var(--marca-oscuro);
+  --bs-btn-active-bg: var(--marca-oscuro);
+  --bs-btn-active-border-color: var(--marca-oscuro);
+  --bs-btn-disabled-bg: var(--marca);
+  --bs-btn-disabled-border-color: var(--marca);
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--marca);
+  --bs-btn-border-color: var(--marca);
+  --bs-btn-hover-bg: var(--marca);
+  --bs-btn-hover-border-color: var(--marca);
+  --bs-btn-active-bg: var(--marca-oscuro);
+  --bs-btn-active-border-color: var(--marca-oscuro);
+}
+
+.text-primary { color: var(--marca) !important; }
+.text-bg-primary { background-color: var(--marca) !important; color: #fff !important; }
+
+.form-control:focus,
+.form-select:focus {
+  border-color: #d97706;
+  box-shadow: 0 0 0 0.2rem rgba(180, 83, 9, 0.2);
+}
+
+.barra-principal {
+  background: #292524;
+}
+
+.barra-principal .nav-link.active {
+  color: #fbbf24 !important;
+}
+
+.barra-principal .nav-link {
+  white-space: nowrap;
+}
+
+@media (min-width: 1200px) {
+  .barra-principal .nav-link {
+    padding-left: 0.45rem !important;
+    padding-right: 0.45rem !important;
+    font-size: 0.92rem;
+  }
+}
+
+.tarjeta {
+  background: #fff;
+  border: 1px solid #e7e5e4;
+  border-radius: 0.6rem;
+}
+
+.alertas-flotantes {
+  position: fixed;
+  top: 4.5rem;
+  right: 1rem;
+  z-index: 2000;
+  width: min(380px, calc(100vw - 2rem));
+}
+
+.buscador {
+  max-width: 340px;
+}
+
+.kpi-valor {
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+
+.pantalla-login {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #292524 0%, #78350f 100%);
+}
+
+.grafica {
+  position: relative;
+  height: 320px;
+}
+
+.json-auditoria {
+  font-size: 0.78rem;
+  max-height: 220px;
+  overflow: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.table td,
+.table th {
+  white-space: nowrap;
+}
+
+.table td.ajustar {
+  white-space: normal;
+  min-width: 180px;
+}
+
+@media (max-width: 575.98px) {
+  .buscador { max-width: none; width: 100%; }
+  .kpi-valor { font-size: 1.3rem; }
+  .grafica { height: 260px; }
+}
